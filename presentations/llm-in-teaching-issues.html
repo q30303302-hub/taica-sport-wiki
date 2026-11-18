@@ -1,0 +1,287 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#102a24">
+  <title>LLM 在運動教學上的運用問題</title>
+  <style>
+    :root {
+      --ink: #102a24;
+      --paper: #f4f0e8;
+      --muted: #5b6a62;
+      --accent: #cf5e3c;
+      --lime: #d6e7a6;
+      --line: rgba(16,42,36,.22);
+      --pad: clamp(28px, 7vw, 96px);
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; min-height: 100%; background: var(--ink); color: var(--ink); font-family: "Aptos", "Noto Sans TC", "Microsoft JhengHei", sans-serif; }
+    body { overflow: hidden; }
+    .deck { width: 100vw; height: 100vh; position: relative; }
+    .slide {
+      display: none;
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: var(--pad);
+      background: var(--paper);
+      overflow: auto;
+      align-content: center;
+    }
+    .slide.active { display: grid; }
+    .slide.dark { background: var(--ink); color: var(--paper); }
+    .slide-image {
+      background:
+        linear-gradient(90deg, rgba(10,30,25,.91) 0%, rgba(10,30,25,.72) 47%, rgba(10,30,25,.15) 100%),
+        url("https://www.meganoticias.mx/uploads/noticias/cuerpo/inteligencia-artificial-en-las-aulas-herramienta-o-amenaza-para-el-aprendizaje-17770583000.jpg") center / cover no-repeat,
+        var(--ink);
+      color: white;
+    }
+    .cover-copy { max-width: 760px; position: relative; z-index: 1; }
+    .eyebrow { color: var(--accent); font-size: 17px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; margin: 0 0 24px; }
+    h1, h2, p { margin-top: 0; }
+    h1 { font-size: clamp(48px, 6.4vw, 88px); line-height: 1.04; letter-spacing: -.045em; margin-bottom: 26px; }
+    h2 { font-size: clamp(38px, 4.5vw, 62px); line-height: 1.08; letter-spacing: -.035em; max-width: 1000px; margin-bottom: 34px; }
+    h3 { font-size: clamp(24px, 2.6vw, 34px); line-height: 1.2; margin: 0 0 12px; }
+    p, li { font-size: clamp(20px, 2vw, 27px); line-height: 1.45; }
+    p { max-width: 930px; margin-bottom: 16px; }
+    .subtitle { color: #d8e5db; font-size: clamp(23px, 2.4vw, 32px); max-width: 660px; }
+    .source-credit { position: absolute; left: var(--pad); bottom: 66px; color: rgba(255,255,255,.82); font-size: 14px; }
+    a { color: inherit; text-decoration-thickness: 1px; text-underline-offset: 4px; }
+    .dark a { color: var(--lime); }
+    .source-credit a { color: white; }
+    .split { display: grid; grid-template-columns: 1fr 1fr; gap: clamp(32px, 7vw, 100px); align-items: start; }
+    .big-number { font-size: clamp(82px, 12vw, 156px); font-weight: 800; letter-spacing: -.08em; line-height: .9; color: var(--accent); }
+    .number-label { font-size: 19px; color: var(--muted); margin-top: 12px; }
+    .item { border-top: 2px solid var(--line); padding-top: 18px; }
+    .item + .item { margin-top: 28px; }
+    .statement { font-size: clamp(28px, 3.3vw, 44px); line-height: 1.2; font-weight: 700; letter-spacing: -.025em; max-width: 900px; }
+    .quote { border-left: 5px solid var(--accent); padding: 3px 0 3px 22px; font-size: clamp(23px, 2.6vw, 34px); line-height: 1.4; max-width: 900px; }
+    .small { font-size: 18px; line-height: 1.45; color: var(--muted); }
+    .dark .small { color: #b5c8bd; }
+    .source-line { position: absolute; bottom: 28px; left: var(--pad); right: var(--pad); border-top: 1px solid var(--line); padding-top: 11px; font-size: 14px; color: var(--muted); }
+    .dark .source-line { border-color: rgba(244,240,232,.26); color: #b5c8bd; }
+    .source-line a { color: inherit; }
+    .sequence { display: grid; grid-template-columns: repeat(4,1fr); gap: 24px; margin-top: 22px; }
+    .sequence article { border-top: 4px solid var(--accent); padding-top: 14px; }
+    .sequence .step { font-size: 15px; letter-spacing: .1em; color: var(--muted); margin-bottom: 15px; }
+    .sequence p { font-size: clamp(18px, 1.8vw, 23px); }
+    .example-grid { display: grid; grid-template-columns: .85fr 1.15fr; gap: clamp(36px, 7vw, 90px); align-items: start; }
+    .label { font-size: 15px; letter-spacing: .1em; color: var(--muted); margin-bottom: 14px; }
+    .answer { font-size: clamp(24px, 2.7vw, 36px); line-height: 1.32; max-width: 800px; }
+    .highlight { color: var(--accent); }
+    .controls { position: fixed; z-index: 10; right: 24px; bottom: 18px; display: flex; gap: 8px; align-items: center; color: white; font-size: 14px; }
+    .controls button { border: 1px solid rgba(255,255,255,.42); color: white; background: rgba(16,42,36,.8); border-radius: 50%; width: 40px; height: 40px; font-size: 18px; cursor: pointer; }
+    .controls button:hover, .controls button:focus-visible { background: var(--accent); outline: 2px solid white; }
+    .counter { min-width: 52px; text-align: center; }
+    .progress { position: fixed; z-index: 11; left: 0; bottom: 0; height: 4px; background: var(--accent); width: 0; transition: width .25s ease; }
+    .sources-list { display: grid; gap: 16px; }
+    .sources-list p { font-size: clamp(16px, 1.55vw, 20px); margin: 0; }
+    @media (max-width: 760px) {
+      body { overflow: auto; }
+      .deck { height: 100dvh; }
+      .slide { padding: 32px 26px 80px; }
+      .split, .example-grid { grid-template-columns: 1fr; gap: 28px; }
+      .sequence { grid-template-columns: 1fr 1fr; }
+      .source-line { left: 26px; right: 26px; }
+      .source-credit { left: 26px; bottom: 72px; }
+      p, li { font-size: 21px; }
+    }
+    @media print {
+      @page { size: 13.333in 7.5in; margin: 0; }
+      html, body, .deck { width: 100%; height: auto; overflow: visible; background: white; }
+      .slide, .slide.active { display: grid !important; position: relative; width: 13.333in; height: 7.5in; page-break-after: always; overflow: hidden; print-color-adjust: exact; -webkit-print-color-adjust: exact; }
+      .controls, .progress { display: none; }
+    }
+  </style>
+</head>
+<body>
+  <main class="deck" aria-label="簡報：LLM 在運動教學上的運用問題">
+    <section class="slide slide-image active" aria-label="第 1 張">
+      <div class="cover-copy">
+        <p class="eyebrow">運動知識 × AI 教學</p>
+        <h1>LLM 在運動教學上的運用問題</h1>
+        <p class="subtitle">以 Wiki 的「漸進超負荷」為例，看見回答的價值，也看見它的界線。</p>
+      </div>
+      <p class="source-credit">情境照片：<a href="https://www.meganoticias.mx/los-mochis/noticia/inteligencia-artificial-en-las-aulas-herramienta-o-amenaza-para-el-aprendizaje/729265" target="_blank" rel="noreferrer">Meganoticias</a></p>
+    </section>
+
+    <section class="slide" aria-label="第 2 張">
+      <div>
+        <p class="eyebrow">知識庫設定</p>
+        <h2>LLM 在這個 Wiki 扮演兩種角色</h2>
+        <div class="split">
+          <article class="item">
+            <div class="big-number">01</div>
+            <h3>回答問題</h3>
+            <p>以 Wiki 的筆記與來源解釋訓練概念，必要時指出資料不足或限制。</p>
+          </article>
+          <article class="item">
+            <div class="big-number">02</div>
+            <h3>協助維護</h3>
+            <p>整理、撰寫與連結筆記；重要主張保留可查證來源，不把一般知識變成個人處方。</p>
+          </article>
+        </div>
+      </div>
+      <div class="source-line">依據：<a href="../AGENTS.md">AGENTS.md｜專案目標、LLM 回答與筆記維護</a></div>
+    </section>
+
+    <section class="slide dark" aria-label="第 3 張">
+      <div>
+        <p class="eyebrow">問題 1｜省略條件</p>
+        <h2>答案很順，原則可能被講成口號</h2>
+        <div class="split">
+          <div>
+            <p class="label">容易過度簡化</p>
+            <p class="statement">「漸進超負荷就是每週都加重量。」</p>
+          </div>
+          <div>
+            <p class="label">Wiki 寫的是</p>
+            <p class="quote">逐步調整訓練要求；不代表每次訓練都要加重量。</p>
+            <p>次數、重量、組數或動作難度都可能調整，也要看動作品質與恢復。</p>
+          </div>
+        </div>
+      </div>
+      <div class="source-line">依據：<a href="../漸進超負荷.md">漸進超負荷.md｜核心概念與實際應用</a></div>
+    </section>
+
+    <section class="slide" aria-label="第 4 張">
+      <div>
+        <p class="eyebrow">問題 2｜過度外推</p>
+        <h2>一項研究，不等於人人通用的訓練處方</h2>
+        <div class="split">
+          <div>
+            <div class="big-number">55</div>
+            <p class="number-label">名沒有訓練經驗的年輕女性</p>
+            <div class="big-number" style="font-size: clamp(60px, 8vw, 100px); margin-top: 26px;">8 週</div>
+            <p class="number-label">單一手臂伸展訓練試驗</p>
+          </div>
+          <div>
+            <p class="statement">兩種訓練都增加肌肉厚度；漸進加重組增幅較大。</p>
+            <p>這支持「逐步增加要求」有用，但研究時間短、動作和受試者特定。不能直接推出每個人都該照同一方式加重。</p>
+          </div>
+        </div>
+      </div>
+      <div class="source-line">Kassiano 等人，2026；研究限制依 Wiki 摘要整理。<a href="https://pubmed.ncbi.nlm.nih.gov/41718594/" target="_blank" rel="noreferrer">PubMed</a> · <a href="../漸進超負荷.md">Wiki 筆記</a></div>
+    </section>
+
+    <section class="slide dark" aria-label="第 5 張">
+      <div>
+        <p class="eyebrow">問題 3｜一般建議變成個人處方</p>
+        <h2>LLM 看得到文字，未必看得到訓練現場</h2>
+        <div class="split">
+          <div>
+            <p class="statement">動作是否穩定？</p>
+            <p class="statement">疲勞是否累積？</p>
+            <p class="statement">疼痛是否需要評估？</p>
+          </div>
+          <div>
+            <p>若只根據一句提問就給出確定的加重或復健指示，可能越過 Wiki 設定的安全界線。</p>
+            <p class="quote">傷病內容應是一般教育與求助資訊；不做診斷，也不提供個人化治療或復健處方。</p>
+          </div>
+        </div>
+      </div>
+      <div class="source-line">依據：<a href="../AGENTS.md">AGENTS.md｜健康與安全界線</a></div>
+    </section>
+
+    <section class="slide" aria-label="第 6 張">
+      <div>
+        <p class="eyebrow">教學設計推論｜不是 Wiki 的研究結論</p>
+        <h2>如果只給答案，學生可能少了練習判斷的機會</h2>
+        <div class="split">
+          <div>
+            <p class="quote">「下一次要不要加重？」</p>
+            <p>直接替學生決定，可能跳過讀訓練紀錄、比較動作品質和辨認不確定性的過程。</p>
+          </div>
+          <div>
+            <p class="label">把問題交還給學習者</p>
+            <p class="statement">你會追蹤哪一項？</p>
+            <p class="statement">什麼證據支持下一步？</p>
+            <p class="small">這是依 Wiki 的證據與安全原則提出的教學設計建議，不是該 Wiki 已驗證的教學效果。</p>
+          </div>
+        </div>
+      </div>
+      <div class="source-line">推論依據：<a href="../AGENTS.md">AGENTS.md｜來源與證據、LLM 回答原則</a></div>
+    </section>
+
+    <section class="slide" aria-label="第 7 張">
+      <div>
+        <p class="eyebrow">問答示範</p>
+        <h2>把「直接下指令」改成「依據紀錄討論」</h2>
+        <div class="example-grid">
+          <div>
+            <p class="label">學習者</p>
+            <p class="answer">「我每組都做到 12 下，現在要加重量嗎？」</p>
+          </div>
+          <div>
+            <p class="label">較合適的 LLM 回答</p>
+            <p class="answer">「如果你在多次訓練中都能穩定完成上限，動作和用力程度也合適，可以試著小幅加重，再觀察次數。這是一般例子；若出現疼痛或特殊健康狀況，先不要把它當成個人處方。」</p>
+          </div>
+        </div>
+        <p class="small" style="margin-top: 26px;">回答應附上 Wiki 依據，說明這是示例而非固定規則。</p>
+      </div>
+      <div class="source-line">依據：<a href="../漸進超負荷.md">漸進超負荷.md｜實際應用與限制</a></div>
+    </section>
+
+    <section class="slide dark" aria-label="第 8 張">
+      <div>
+        <p class="eyebrow">教學使用原則</p>
+        <h2>讓 LLM 解釋、提問、查核；保留人的判斷</h2>
+        <div class="sequence">
+          <article><p class="step">01｜根據 Wiki</p><p>先用已收錄且有來源的知識回答。</p></article>
+          <article><p class="step">02｜交代限制</p><p>標示證據範圍、不確定性與不適用情境。</p></article>
+          <article><p class="step">03｜讓學生思考</p><p>請學生先觀察紀錄、說出理由，再看建議。</p></article>
+          <article><p class="step">04｜需要時求助</p><p>涉及傷病或特殊健康情況，轉向合格專業評估。</p></article>
+        </div>
+        <div class="sources-list" style="margin-top: 34px;">
+          <p>Wiki：<a href="../AGENTS.md">AGENTS.md</a> · <a href="../漸進超負荷.md">漸進超負荷.md</a></p>
+          <p>外部依據：<a href="https://pubmed.ncbi.nlm.nih.gov/41843416/" target="_blank" rel="noreferrer">ACSM 2026 立場聲明</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/38286426/" target="_blank" rel="noreferrer">Chaves 等人，2024</a> · <a href="https://pubmed.ncbi.nlm.nih.gov/41718594/" target="_blank" rel="noreferrer">Kassiano 等人，2026</a></p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <nav class="controls" aria-label="簡報控制">
+    <button type="button" id="prev" aria-label="上一張">←</button>
+    <span id="counter" class="counter" aria-live="polite">1 / 8</span>
+    <button type="button" id="next" aria-label="下一張">→</button>
+  </nav>
+  <div id="progress" class="progress" aria-hidden="true"></div>
+  <script>
+    (() => {
+      const slides = [...document.querySelectorAll(".slide")];
+      const counter = document.getElementById("counter");
+      const progress = document.getElementById("progress");
+      let current = 0;
+      function show(index) {
+        current = Math.max(0, Math.min(index, slides.length - 1));
+        slides.forEach((slide, i) => {
+          slide.classList.toggle("active", i === current);
+          slide.setAttribute("aria-hidden", i === current ? "false" : "true");
+        });
+        counter.textContent = (current + 1) + " / " + slides.length;
+        progress.style.width = ((current + 1) / slides.length * 100) + "%";
+      }
+      document.getElementById("prev").addEventListener("click", () => show(current - 1));
+      document.getElementById("next").addEventListener("click", () => show(current + 1));
+      document.addEventListener("keydown", event => {
+        if (["ArrowRight", "PageDown", " "].includes(event.key)) { event.preventDefault(); show(current + 1); }
+        if (["ArrowLeft", "PageUp"].includes(event.key)) { event.preventDefault(); show(current - 1); }
+        if (event.key === "Home") show(0);
+        if (event.key === "End") show(slides.length - 1);
+      });
+      let startX = null;
+      document.addEventListener("touchstart", event => { startX = event.changedTouches[0].clientX; }, {passive:true});
+      document.addEventListener("touchend", event => {
+        if (startX === null) return;
+        const delta = event.changedTouches[0].clientX - startX;
+        if (Math.abs(delta) > 60) show(current + (delta < 0 ? 1 : -1));
+        startX = null;
+      }, {passive:true});
+      show(0);
+    })();
+  </script>
+</body>
+</html>
